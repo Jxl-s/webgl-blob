@@ -9,6 +9,7 @@ export const BlobMaterial = shaderMaterial(
         uTime: null,
         uFrequency: null,
         uAmplitude: null,
+        uSpeed: null,
         uLowColor: null,
         uHighColor: null,
     },

@@ -276,10 +276,11 @@ varying float vElevation;
 uniform float uTime;
 uniform float uFrequency;
 uniform float uAmplitude;
+uniform float uSpeed;
 
 void main() {
   vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-  float elevation = cnoise(vec4(modelPosition.xyz, uTime) * uFrequency) * uAmplitude;
+  float elevation = cnoise(vec4(modelPosition.xyz, uTime * uSpeed) * uFrequency) * uAmplitude;
 
   modelPosition.xyz += normal * elevation;
 
