@@ -1,7 +1,7 @@
 import { OrbitControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
-import { useControls } from "leva";
+import { useEffect, useRef, useState } from "react";
+import { button, useControls } from "leva";
 import * as THREE from "three";
 
 // Shaders
@@ -10,6 +10,9 @@ import "./shaders/BlobMaterial";
 export default function Experience() {
     const planeMaterial = useRef();
     const sphereGeometry = useRef();
+
+    const [analyser, setAnalyser] = useState(null);
+    const [dataArray, setDataArray] = useState([0]);
 
     const controls = useControls({
         uLowColor: "#89f2ff",
@@ -43,12 +46,37 @@ export default function Experience() {
             min: 0,
             max: 4096,
             step: 1,
-        }
+        },
+        'Enable Mic Visualization': button(async () => {
+            try {
+                const audioContext = new AudioContext();
+
+                const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                const source = audioContext.createMediaStreamSource(mediaStream);
+
+                const analyser = audioContext.createAnalyser();
+                source.connect(analyser);
+
+                analyser.fftSize = 256;
+
+                setAnalyser(analyser);
+                setDataArray(new Uint8Array(analyser.frequencyBinCount));
+            } catch (e) {
+                console.log("Microphone disabled");
+            }
+        })
     });
 
     useFrame(({ clock }) => {
-        if (!planeMaterial) return;
+        if (!planeMaterial.current) return;
         planeMaterial.current.uniforms.uTime.value = clock.getElapsedTime();
+    });
+
+    useFrame(() => {
+        if (!analyser) return;
+        analyser.getByteFrequencyData(dataArray);
+
+        planeMaterial.current.uniforms.uAmplitude.value = controls.uAmplitude + (dataArray[0] / 255 * 5)
     });
 
     return (
@@ -66,10 +94,12 @@ export default function Experience() {
                 <blobMaterial
                     ref={planeMaterial}
                     {...controls}
+                    uAmplitude={controls.uAmplitude}
                     uLowColor={new THREE.Color(controls.uLowColor)}
                     uHighColor={new THREE.Color(controls.uHighColor)}
                 />
             </mesh>
+
         </>
     );
 }
